@@ -1,26 +1,149 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, useCallback } from "react";
+import { useProject } from "@/store/project";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { AudioWaveform, Upload } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { audioEngine } from "@/lib/audio-engine";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "MELLOW — Karaoke Video Creator" },
+      { name: "description", content: "Turn any song into a karaoke video, 100% in your browser." },
+      { property: "og:title", content: "MELLOW — Karaoke Video Creator" },
+      { property: "og:description", content: "Upload audio, sync lyrics, export an MP4. No accounts, no servers." },
+    ],
+  }),
+  component: UploadPage,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function UploadPage() {
+  const navigate = useNavigate();
+  const { audioFile, loadFile, setMeta, setLyrics, title, artist } = useProject();
+  const [t, setT] = useState(title);
+  const [a, setA] = useState(artist);
+  const [lyrics, setLyricsLocal] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState(false);
+
+  const onFile = useCallback(async (file: File) => {
+    setBusy(true);
+    try {
+      await loadFile(file);
+      audioEngine.setSource(URL.createObjectURL(file));
+      toast.success(`Loaded ${file.name}`);
+    } catch (e) {
+      toast.error("Failed to load file");
+    } finally {
+      setBusy(false);
+    }
+  }, [loadFile]);
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDrag(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) onFile(f);
+  };
+
+  const submit = () => {
+    if (!audioFile) return toast.error("Please upload an audio file");
+    if (!lyrics.trim()) return toast.error("Please paste lyrics");
+    setMeta(t || audioFile.name.replace(/\.[^.]+$/, ""), a);
+    setLyrics(lyrics);
+    navigate({ to: "/app/basics" });
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b border-border px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AudioWaveform className="h-6 w-6 text-primary" />
+          <h1 className="text-xl font-bold tracking-wide">MELLOW</h1>
+          <span className="text-xs text-muted-foreground ml-2 uppercase tracking-wider">Karaoke Studio</span>
+        </div>
+        <ThemeToggle />
+      </header>
+
+      <main className="flex-1 px-6 py-10 max-w-7xl mx-auto w-full">
+        <div className="text-center mb-10">
+          <h2 className="text-4xl font-bold mb-3">Make a karaoke video from any song</h2>
+          <p className="text-muted-foreground">Upload audio, paste lyrics, sync, export. All in your browser.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* File picker */}
+          <section
+            onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+            onDragLeave={() => setDrag(false)}
+            onDrop={onDrop}
+            className={"rounded-xl border-2 border-dashed p-6 transition-colors " + (drag ? "border-primary bg-primary/5" : "border-border")}
+          >
+            <div className="flex flex-col items-center justify-center h-full text-center gap-3 min-h-[260px]">
+              <Upload className="h-10 w-10 text-primary" />
+              <div>
+                <p className="font-medium">Drop your audio or video</p>
+                <p className="text-xs text-muted-foreground">.mp3, .m4a, .wav, .ogg, .mp4</p>
+              </div>
+              <label>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".mp3,.m4a,.mp4,.wav,.ogg,audio/*,video/*"
+                  onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+                />
+                <span className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium cursor-pointer hover:bg-primary/90">
+                  {busy ? "Loading…" : "Browse"}
+                </span>
+              </label>
+              {audioFile && (
+                <p className="text-xs text-foreground mt-2 truncate max-w-full" title={audioFile.name}>
+                  ✓ {audioFile.name}
+                </p>
+              )}
+            </div>
+          </section>
+
+          {/* Metadata */}
+          <section className="rounded-xl border border-border p-6 space-y-4">
+            <h3 className="font-semibold">Metadata</h3>
+            <div className="space-y-2">
+              <Label>Song title</Label>
+              <Input value={t} onChange={(e) => setT(e.target.value)} placeholder="e.g. Bohemian Rhapsody" />
+            </div>
+            <div className="space-y-2">
+              <Label>Artist</Label>
+              <Input value={a} onChange={(e) => setA(e.target.value)} placeholder="e.g. Queen" />
+            </div>
+          </section>
+
+          {/* Lyrics */}
+          <section className="rounded-xl border border-border p-6 space-y-3">
+            <h3 className="font-semibold">Lyrics</h3>
+            <p className="text-xs text-muted-foreground">
+              Paste the full lyrics. One line per row. Include repeated sections (chorus repeats) as separate lines.
+            </p>
+            <Textarea
+              value={lyrics}
+              onChange={(e) => setLyricsLocal(e.target.value)}
+              placeholder={"Is this the real life\nIs this just fantasy\n…"}
+              className="min-h-[180px] font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">{lyrics.split("\n").filter((l) => l.trim()).length} lines</p>
+          </section>
+        </div>
+
+        <div className="flex justify-center mt-10">
+          <Button size="lg" onClick={submit} disabled={busy}>
+            Continue →
+          </Button>
+        </div>
+      </main>
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
