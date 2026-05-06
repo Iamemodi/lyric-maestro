@@ -101,7 +101,8 @@ function GeneratePage() {
       ]);
 
       const data = await ffmpeg.readFile("out.mp4");
-      const blob = new Blob([data as Uint8Array], { type: "video/mp4" });
+      const dataU8 = data as Uint8Array;
+      const blob = new Blob([dataU8.buffer.slice(dataU8.byteOffset, dataU8.byteOffset + dataU8.byteLength) as ArrayBuffer], { type: "video/mp4" });
       const url = URL.createObjectURL(blob);
       setGenerated(url, hd);
       setProgress(100);

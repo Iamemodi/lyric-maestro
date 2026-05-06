@@ -9,38 +9,170 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppWordTimingsRouteImport } from './routes/app.word-timings'
+import { Route as AppVideoRouteImport } from './routes/app.video'
+import { Route as AppResyncRouteImport } from './routes/app.resync'
+import { Route as AppRemixRouteImport } from './routes/app.remix'
+import { Route as AppOptionsRouteImport } from './routes/app.options'
+import { Route as AppLineTimingsRouteImport } from './routes/app.line-timings'
+import { Route as AppGenerateRouteImport } from './routes/app.generate'
+import { Route as AppBasicsRouteImport } from './routes/app.basics'
+import { Route as AppAssignmentsRouteImport } from './routes/app.assignments'
 
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppWordTimingsRoute = AppWordTimingsRouteImport.update({
+  id: '/word-timings',
+  path: '/word-timings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVideoRoute = AppVideoRouteImport.update({
+  id: '/video',
+  path: '/video',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppResyncRoute = AppResyncRouteImport.update({
+  id: '/resync',
+  path: '/resync',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRemixRoute = AppRemixRouteImport.update({
+  id: '/remix',
+  path: '/remix',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOptionsRoute = AppOptionsRouteImport.update({
+  id: '/options',
+  path: '/options',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLineTimingsRoute = AppLineTimingsRouteImport.update({
+  id: '/line-timings',
+  path: '/line-timings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGenerateRoute = AppGenerateRouteImport.update({
+  id: '/generate',
+  path: '/generate',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBasicsRoute = AppBasicsRouteImport.update({
+  id: '/basics',
+  path: '/basics',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAssignmentsRoute = AppAssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/assignments': typeof AppAssignmentsRoute
+  '/app/basics': typeof AppBasicsRoute
+  '/app/generate': typeof AppGenerateRoute
+  '/app/line-timings': typeof AppLineTimingsRoute
+  '/app/options': typeof AppOptionsRoute
+  '/app/remix': typeof AppRemixRoute
+  '/app/resync': typeof AppResyncRoute
+  '/app/video': typeof AppVideoRoute
+  '/app/word-timings': typeof AppWordTimingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/assignments': typeof AppAssignmentsRoute
+  '/app/basics': typeof AppBasicsRoute
+  '/app/generate': typeof AppGenerateRoute
+  '/app/line-timings': typeof AppLineTimingsRoute
+  '/app/options': typeof AppOptionsRoute
+  '/app/remix': typeof AppRemixRoute
+  '/app/resync': typeof AppResyncRoute
+  '/app/video': typeof AppVideoRoute
+  '/app/word-timings': typeof AppWordTimingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/app/assignments': typeof AppAssignmentsRoute
+  '/app/basics': typeof AppBasicsRoute
+  '/app/generate': typeof AppGenerateRoute
+  '/app/line-timings': typeof AppLineTimingsRoute
+  '/app/options': typeof AppOptionsRoute
+  '/app/remix': typeof AppRemixRoute
+  '/app/resync': typeof AppResyncRoute
+  '/app/video': typeof AppVideoRoute
+  '/app/word-timings': typeof AppWordTimingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/app/assignments'
+    | '/app/basics'
+    | '/app/generate'
+    | '/app/line-timings'
+    | '/app/options'
+    | '/app/remix'
+    | '/app/resync'
+    | '/app/video'
+    | '/app/word-timings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/app'
+    | '/app/assignments'
+    | '/app/basics'
+    | '/app/generate'
+    | '/app/line-timings'
+    | '/app/options'
+    | '/app/remix'
+    | '/app/resync'
+    | '/app/video'
+    | '/app/word-timings'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/app/assignments'
+    | '/app/basics'
+    | '/app/generate'
+    | '/app/line-timings'
+    | '/app/options'
+    | '/app/remix'
+    | '/app/resync'
+    | '/app/video'
+    | '/app/word-timings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +180,101 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/word-timings': {
+      id: '/app/word-timings'
+      path: '/word-timings'
+      fullPath: '/app/word-timings'
+      preLoaderRoute: typeof AppWordTimingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/video': {
+      id: '/app/video'
+      path: '/video'
+      fullPath: '/app/video'
+      preLoaderRoute: typeof AppVideoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/resync': {
+      id: '/app/resync'
+      path: '/resync'
+      fullPath: '/app/resync'
+      preLoaderRoute: typeof AppResyncRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/remix': {
+      id: '/app/remix'
+      path: '/remix'
+      fullPath: '/app/remix'
+      preLoaderRoute: typeof AppRemixRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/options': {
+      id: '/app/options'
+      path: '/options'
+      fullPath: '/app/options'
+      preLoaderRoute: typeof AppOptionsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/line-timings': {
+      id: '/app/line-timings'
+      path: '/line-timings'
+      fullPath: '/app/line-timings'
+      preLoaderRoute: typeof AppLineTimingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/generate': {
+      id: '/app/generate'
+      path: '/generate'
+      fullPath: '/app/generate'
+      preLoaderRoute: typeof AppGenerateRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/basics': {
+      id: '/app/basics'
+      path: '/basics'
+      fullPath: '/app/basics'
+      preLoaderRoute: typeof AppBasicsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/assignments': {
+      id: '/app/assignments'
+      path: '/assignments'
+      fullPath: '/app/assignments'
+      preLoaderRoute: typeof AppAssignmentsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppAssignmentsRoute: typeof AppAssignmentsRoute
+  AppBasicsRoute: typeof AppBasicsRoute
+  AppGenerateRoute: typeof AppGenerateRoute
+  AppLineTimingsRoute: typeof AppLineTimingsRoute
+  AppOptionsRoute: typeof AppOptionsRoute
+  AppRemixRoute: typeof AppRemixRoute
+  AppResyncRoute: typeof AppResyncRoute
+  AppVideoRoute: typeof AppVideoRoute
+  AppWordTimingsRoute: typeof AppWordTimingsRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAssignmentsRoute: AppAssignmentsRoute,
+  AppBasicsRoute: AppBasicsRoute,
+  AppGenerateRoute: AppGenerateRoute,
+  AppLineTimingsRoute: AppLineTimingsRoute,
+  AppOptionsRoute: AppOptionsRoute,
+  AppRemixRoute: AppRemixRoute,
+  AppResyncRoute: AppResyncRoute,
+  AppVideoRoute: AppVideoRoute,
+  AppWordTimingsRoute: AppWordTimingsRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
