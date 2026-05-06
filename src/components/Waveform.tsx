@@ -48,9 +48,8 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
 
     const playedX = duration > 0 ? (time / duration) * drawW : 0;
     const styles = getComputedStyle(document.documentElement);
-    const wrap = (v: string, fb: string) => (v ? `oklch(${v})` : fb);
-    const played = wrap(styles.getPropertyValue("--waveform-played").trim(), "#7c3aed");
-    const unplayed = wrap(styles.getPropertyValue("--waveform-unplayed").trim(), "#444");
+    const played = styles.getPropertyValue("--waveform-played").trim() || "#7c3aed";
+    const unplayed = styles.getPropertyValue("--waveform-unplayed").trim() || "#444";
 
     const bars = peaks.length;
     const barW = drawW / bars;
