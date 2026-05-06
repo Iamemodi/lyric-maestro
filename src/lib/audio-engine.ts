@@ -70,6 +70,11 @@ import { useEffect, useState } from "react";
 
 export function useAudioState() {
   const [state, setState] = useState({ time: audioEngine.currentTime, playing: audioEngine.playing });
-  useEffect(() => audioEngine.subscribe((time, playing) => setState({ time, playing })), []);
+  useEffect(() => {
+    const unsub = audioEngine.subscribe((time, playing) => setState({ time, playing }));
+    return () => {
+      unsub();
+    };
+  }, []);
   return state;
 }

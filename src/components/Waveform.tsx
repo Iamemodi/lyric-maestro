@@ -57,7 +57,7 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
     for (let i = 0; i < bars; i++) {
       const x = i * barW;
       const h = peaks[i] * (height * 0.9);
-      ctx.fillStyle = `oklch(${x < playedX ? played : unplayed})`;
+      ctx.fillStyle = x < playedX ? played : unplayed;
       ctx.fillRect(x, mid - h / 2, Math.max(1, barW - 0.5), h);
     }
 
