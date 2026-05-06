@@ -1,8 +1,10 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Waveform } from "@/components/Waveform";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useProject } from "@/store/project";
+import { audioEngine } from "@/lib/audio-engine";
 
 export const Route = createFileRoute("/app")({
   beforeLoad: () => {
@@ -17,7 +19,10 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppShell() {
-  const { title, artist } = useProject();
+  const { title, artist, audioUrl } = useProject();
+  useEffect(() => {
+    if (audioUrl) audioEngine.setSource(audioUrl);
+  }, [audioUrl]);
   return (
     <div className="h-screen flex w-full overflow-hidden">
       <Sidebar />
