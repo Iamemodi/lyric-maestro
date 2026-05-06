@@ -35,7 +35,8 @@ function UploadPage() {
     setBusy(true);
     try {
       await loadFile(file);
-      audioEngine.setSource(URL.createObjectURL(file));
+      const url = useProject.getState().audioUrl;
+      if (url) audioEngine.setSource(url);
       toast.success(`Loaded ${file.name}`);
     } catch (e) {
       toast.error("Failed to load file");
