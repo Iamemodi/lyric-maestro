@@ -142,7 +142,17 @@ function GeneratePage() {
         </div>
 
         {status === "idle" && (
-          <Button onClick={() => start(false)} size="lg" className="w-full">Render SD video (720p)</Button>
+          <div className="space-y-2">
+            <Button onClick={() => start(false)} size="lg" className="w-full">
+              Render SD video (720p)
+            </Button>
+            <Button onClick={() => start(true)} size="lg" variant="outline" className="w-full">
+              Render HD video (1080p) — slower
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              HD takes significantly longer to encode in-browser.
+            </p>
+          </div>
         )}
 
         {status !== "idle" && status !== "done" && status !== "error" && (
