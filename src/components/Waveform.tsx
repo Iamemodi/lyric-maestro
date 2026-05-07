@@ -23,6 +23,18 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
   const { time, playing } = useAudioState();
   const [zoom, setZoom] = useState(1);
   const [width, setWidth] = useState(800);
+  const [isLight, setIsLight] = useState(() =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("light"),
+  );
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const obs = new MutationObserver(() => {
+      setIsLight(document.documentElement.classList.contains("light"));
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
