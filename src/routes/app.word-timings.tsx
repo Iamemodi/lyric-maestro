@@ -14,7 +14,6 @@ function WordTimingsPage() {
   const audio = useAudioState();
   const line = timed[idx];
   const [tapped, setTapped] = useState<number[]>([]);
-  const startRef = useRef<number>(0);
 
   useEffect(() => {
     setTapped(line ? line.words.map((w) => w.offset).filter((o) => o >= 0) : []);
@@ -24,14 +23,13 @@ function WordTimingsPage() {
     if (!line) return;
     audioEngine.seek(line.startTime!);
     audioEngine.play();
-    startRef.current = performance.now();
     setTapped([]);
   };
 
   const tapWord = (i: number) => {
     if (!line) return;
     if (i !== tapped.length) return; // must tap in order
-    const offsetMs = performance.now() - startRef.current;
+    const offsetMs = (audioEngine.currentTime - line.startTime!) * 1000;
     const next = [...tapped, offsetMs];
     setTapped(next);
     if (next.length === line.words.length) {
