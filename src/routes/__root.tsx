@@ -73,14 +73,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Mellow" },
+      { name: "description", content: "Lyric Maestro creates custom karaoke lyric videos from your audio or video files." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Mellow" },
+      { property: "og:description", content: "Lyric Maestro creates custom karaoke lyric videos from your audio or video files." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Mellow" },
+      { name: "twitter:description", content: "Lyric Maestro creates custom karaoke lyric videos from your audio or video files." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f61673f-6616-4771-aff5-d217ca9266b4/id-preview-de4d2da2--1013e2ce-f455-4043-ab4c-2f84ebd61d66.lovable.app-1778154948963.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f61673f-6616-4771-aff5-d217ca9266b4/id-preview-de4d2da2--1013e2ce-f455-4043-ab4c-2f84ebd61d66.lovable.app-1778154948963.png" },
     ],
     links: [
       {
