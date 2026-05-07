@@ -61,6 +61,10 @@ function BasicsPage() {
           ))}
         </div>
       </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/options">Next: Options →</Link></Button>
+      </div>
     </div>
   );
 }
