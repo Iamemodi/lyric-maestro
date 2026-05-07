@@ -58,6 +58,10 @@ function ResyncPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/word-timings">Next: Word Timings →</Link></Button>
+      </div>
     </div>
   );
 }
