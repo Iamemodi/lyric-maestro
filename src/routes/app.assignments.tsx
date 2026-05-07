@@ -71,6 +71,10 @@ function AssignmentsPage() {
           ))}
         </div>
       </aside>
+
+      <div className="lg:col-span-2 flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/line-timings">Next: Line Timings →</Link></Button>
+      </div>
     </div>
   );
 }
