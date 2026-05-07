@@ -17,9 +17,9 @@ function GeneratePage() {
   const ffmpegRef = useRef<any>(null);
   const navigate = useNavigate();
 
-  const totalDuration = (lines.find((l) => l.startTime != null)?.startTime ?? 0) > 0
-    ? Math.max(duration, (Math.max(...lines.map((l) => l.startTime ?? 0))) + 5) + options.outroSeconds
-    : duration;
+  const timedLines = lines.filter((l) => l.startTime != null);
+  const lastStart = timedLines.length > 0 ? Math.max(...timedLines.map((l) => l.startTime!)) : 0;
+  const totalDuration = Math.max(duration > 0 ? duration : 0, lastStart + 5) + options.outroSeconds;
 
   const start = async (hd = false) => {
     if (!audioFile) return toast.error("No audio");
