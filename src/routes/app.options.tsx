@@ -119,6 +119,10 @@ function OptionsPage() {
         <PreviewCanvas placeholder width={760} />
         <p className="text-xs text-muted-foreground">Animates over a 12s loop</p>
       </div>
+
+      <div className="lg:col-span-2 flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/assignments">Next: Assignments →</Link></Button>
+      </div>
     </div>
   );
 }
