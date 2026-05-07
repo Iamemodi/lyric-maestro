@@ -82,7 +82,7 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
     // playhead
     ctx.fillStyle = "#ef4444";
     ctx.fillRect(playedX - 1, 0, 2, height);
-  }, [peaks, time, duration, width, zoom, height, markers]);
+  }, [peaks, time, duration, width, zoom, height, markers, isLight]);
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!duration) return;
