@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
