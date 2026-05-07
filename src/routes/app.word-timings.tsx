@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Play, Pause, SkipForward } from "lucide-react";
 
 export const Route = createFileRoute("/app/word-timings")({ component: WordTimingsPage });
