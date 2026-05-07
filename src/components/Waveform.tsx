@@ -59,7 +59,6 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
     ctx.clearRect(0, 0, drawW, height);
 
     const playedX = duration > 0 ? (time / duration) * drawW : 0;
-    const isLight = document.documentElement.classList.contains("light");
     const played = "#8b5cf6";
     const unplayed = isLight ? "#d4d4d8" : "#3f3f46";
 
