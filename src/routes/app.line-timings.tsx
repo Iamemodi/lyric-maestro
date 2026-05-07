@@ -94,6 +94,10 @@ function LineTimingsPage() {
           <p className="text-sm text-muted-foreground">Press <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs">Space</kbd> on each line as it starts.</p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={runAiSync} disabled={aiLoading} variant="secondary">
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+            AI Auto-Sync
+          </Button>
           <Button onClick={() => audioEngine.toggle()}>{audio.playing ? "Pause" : "Play"}</Button>
           <Button onClick={mark} variant="default">Mark line ({safeIdx + 1}/{lines.length})</Button>
         </div>
