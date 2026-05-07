@@ -4,7 +4,9 @@ import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { formatTime, Waveform } from "@/components/Waveform";
-import { Play } from "lucide-react";
+import { Play, Sparkles, Loader2 } from "lucide-react";
+import { aiSyncLines } from "@/lib/ai-sync.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/line-timings")({ component: LineTimingsPage });
 
