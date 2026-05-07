@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -17,9 +17,9 @@ function GeneratePage() {
   const ffmpegRef = useRef<any>(null);
   const navigate = useNavigate();
 
-  const totalDuration = (lines.find((l) => l.startTime != null)?.startTime ?? 0) > 0
-    ? Math.max(duration, (Math.max(...lines.map((l) => l.startTime ?? 0))) + 5) + options.outroSeconds
-    : duration;
+  const timedLines = lines.filter((l) => l.startTime != null);
+  const lastStart = timedLines.length > 0 ? Math.max(...timedLines.map((l) => l.startTime!)) : 0;
+  const totalDuration = Math.max(duration > 0 ? duration : 0, lastStart + 5) + options.outroSeconds;
 
   const start = async (hd = false) => {
     if (!audioFile) return toast.error("No audio");
@@ -142,7 +142,17 @@ function GeneratePage() {
         </div>
 
         {status === "idle" && (
-          <Button onClick={() => start(false)} size="lg" className="w-full">Render SD video (720p)</Button>
+          <div className="space-y-2">
+            <Button onClick={() => start(false)} size="lg" className="w-full">
+              Render SD video (720p)
+            </Button>
+            <Button onClick={() => start(true)} size="lg" variant="outline" className="w-full">
+              Render HD video (1080p) — slower
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              HD takes significantly longer to encode in-browser.
+            </p>
+          </div>
         )}
 
         {status !== "idle" && status !== "done" && status !== "error" && (
@@ -159,6 +169,10 @@ function GeneratePage() {
         {status === "error" && (
           <Button onClick={() => start(false)}>Retry</Button>
         )}
+      </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/video">Next: Video →</Link></Button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface LyricLine {
   id: string;
@@ -97,115 +98,135 @@ function parseLyrics(raw: string): LyricLine[] {
       text,
       voiceId: null,
       startTime: null,
-      words: text.split(/\s+/).map((w) => ({ text: w, offset: 0 })).map((w) => ({ ...w, offset: -1 })),
+      words: text.split(/\s+/).map((w) => ({ text: w, offset: -1 })),
     }));
 }
 
-export const useProject = create<ProjectState>((set, get) => ({
-  audioFile: null,
-  audioUrl: null,
-  audioBuffer: null,
-  rawArrayBuffer: null,
-  peaks: null,
-  duration: 0,
-  title: "",
-  artist: "",
-  lines: [],
-  voices: defaultVoices,
-  options: defaultOptions,
-  generated: { blobUrl: null, hd: false },
+export const useProject = create<ProjectState>()(
+  persist(
+    (set, get) => ({
+      audioFile: null,
+      audioUrl: null,
+      audioBuffer: null,
+      rawArrayBuffer: null,
+      peaks: null,
+      duration: 0,
+      title: "",
+      artist: "",
+      lines: [],
+      voices: defaultVoices,
+      options: defaultOptions,
+      generated: { blobUrl: null, hd: false },
 
-  loadFile: async (file) => {
-    const arr = await file.arrayBuffer();
-    const url = URL.createObjectURL(file);
-    set({ audioFile: file, audioUrl: url, rawArrayBuffer: arr });
-    try {
-      const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
-      const ctx = new AC();
-      const buf = await ctx.decodeAudioData(arr.slice(0));
-      // downsample peaks
-      const target = 3000;
-      const channel = buf.getChannelData(0);
-      const block = Math.max(1, Math.floor(channel.length / target));
-      const peaks = new Float32Array(target);
-      for (let i = 0; i < target; i++) {
-        let max = 0;
-        const start = i * block;
-        const end = Math.min(channel.length, start + block);
-        for (let j = start; j < end; j++) {
-          const v = Math.abs(channel[j]);
-          if (v > max) max = v;
+      loadFile: async (file) => {
+        const arr = await file.arrayBuffer();
+        const url = URL.createObjectURL(file);
+        set({ audioFile: file, audioUrl: url, rawArrayBuffer: arr });
+        try {
+          const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+          const ctx = new AC();
+          const buf = await ctx.decodeAudioData(arr.slice(0));
+          const target = 3000;
+          const channel = buf.getChannelData(0);
+          const block = Math.max(1, Math.floor(channel.length / target));
+          const peaks = new Float32Array(target);
+          for (let i = 0; i < target; i++) {
+            let max = 0;
+            const start = i * block;
+            const end = Math.min(channel.length, start + block);
+            for (let j = start; j < end; j++) {
+              const v = Math.abs(channel[j]);
+              if (v > max) max = v;
+            }
+            peaks[i] = max;
+          }
+          set({ audioBuffer: buf, peaks, duration: buf.duration });
+          ctx.close();
+        } catch (e) {
+          console.error("decode failed", e);
         }
-        peaks[i] = max;
-      }
-      set({ audioBuffer: buf, peaks, duration: buf.duration });
-      ctx.close();
-    } catch (e) {
-      console.error("decode failed", e);
-    }
-  },
+      },
 
-  setLyrics: (raw) => set({ lines: parseLyrics(raw) }),
-  setMeta: (title, artist) => set({ title, artist }),
+      setLyrics: (raw) => set({ lines: parseLyrics(raw) }),
+      setMeta: (title, artist) => set({ title, artist }),
 
-  assignVoice: (lineId, voiceId) =>
-    set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, voiceId } : l)) })),
+      assignVoice: (lineId, voiceId) =>
+        set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, voiceId } : l)) })),
 
-  cycleVoice: (lineId) =>
-    set((s) => {
-      const ids = [null as string | null, ...s.voices.map((v) => v.id)];
-      return {
-        lines: s.lines.map((l) => {
-          if (l.id !== lineId) return l;
-          const idx = ids.indexOf(l.voiceId);
-          const next = ids[(idx + 1) % ids.length];
-          return { ...l, voiceId: next };
+      cycleVoice: (lineId) =>
+        set((s) => {
+          const ids = [null as string | null, ...s.voices.map((v) => v.id)];
+          return {
+            lines: s.lines.map((l) => {
+              if (l.id !== lineId) return l;
+              const idx = ids.indexOf(l.voiceId);
+              const next = ids[(idx + 1) % ids.length];
+              return { ...l, voiceId: next };
+            }),
+          };
         }),
-      };
+
+      setLineStart: (lineId, time) =>
+        set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, startTime: time } : l)) })),
+
+      setWordOffsets: (lineId, offsets) =>
+        set((s) => ({
+          lines: s.lines.map((l) =>
+            l.id === lineId ? { ...l, words: l.words.map((w, i) => ({ ...w, offset: offsets[i] ?? w.offset })) } : l,
+          ),
+        })),
+
+      skipWordTimings: (lineId) =>
+        set((s) => ({
+          lines: s.lines.map((l) => (l.id === lineId ? { ...l, words: l.words.map((w) => ({ ...w, offset: -1 })) } : l)),
+        })),
+
+      applyGlobalOffset: (delta) =>
+        set((s) => ({
+          lines: s.lines.map((l) => (l.startTime != null ? { ...l, startTime: Math.max(0, l.startTime + delta) } : l)),
+        })),
+
+      resetTimings: () =>
+        set((s) => ({
+          lines: s.lines.map((l) => ({ ...l, startTime: null, words: l.words.map((w) => ({ ...w, offset: -1 })) })),
+        })),
+
+      updateOptions: (patch) => set((s) => ({ options: { ...s.options, ...patch } })),
+
+      addVoice: () =>
+        set((s) => {
+          const palette = ["#EF4444", "#8B5CF6", "#EC4899", "#22D3EE", "#84CC16"];
+          const color = palette[s.voices.length % palette.length];
+          return { voices: [...s.voices, { id: newId(), label: `Voice ${s.voices.length + 1}`, color }] };
+        }),
+
+      removeVoice: (id) =>
+        set((s) => ({
+          voices: s.voices.filter((v) => v.id !== id),
+          lines: s.lines.map((l) => (l.voiceId === id ? { ...l, voiceId: null } : l)),
+        })),
+
+      updateVoice: (id, patch) =>
+        set((s) => ({ voices: s.voices.map((v) => (v.id === id ? { ...v, ...patch } : v)) })),
+
+      setGenerated: (blobUrl, hd) => set({ generated: { blobUrl, hd } }),
     }),
-
-  setLineStart: (lineId, time) =>
-    set((s) => ({ lines: s.lines.map((l) => (l.id === lineId ? { ...l, startTime: time } : l)) })),
-
-  setWordOffsets: (lineId, offsets) =>
-    set((s) => ({
-      lines: s.lines.map((l) =>
-        l.id === lineId ? { ...l, words: l.words.map((w, i) => ({ ...w, offset: offsets[i] ?? w.offset })) } : l,
-      ),
-    })),
-
-  skipWordTimings: (lineId) =>
-    set((s) => ({
-      lines: s.lines.map((l) => (l.id === lineId ? { ...l, words: l.words.map((w) => ({ ...w, offset: -1 })) } : l)),
-    })),
-
-  applyGlobalOffset: (delta) =>
-    set((s) => ({
-      lines: s.lines.map((l) => (l.startTime != null ? { ...l, startTime: Math.max(0, l.startTime + delta) } : l)),
-    })),
-
-  resetTimings: () =>
-    set((s) => ({
-      lines: s.lines.map((l) => ({ ...l, startTime: null, words: l.words.map((w) => ({ ...w, offset: -1 })) })),
-    })),
-
-  updateOptions: (patch) => set((s) => ({ options: { ...s.options, ...patch } })),
-
-  addVoice: () =>
-    set((s) => {
-      const palette = ["#EF4444", "#8B5CF6", "#EC4899", "#22D3EE", "#84CC16"];
-      const color = palette[s.voices.length % palette.length];
-      return { voices: [...s.voices, { id: newId(), label: `Voice ${s.voices.length + 1}`, color }] };
-    }),
-
-  removeVoice: (id) =>
-    set((s) => ({
-      voices: s.voices.filter((v) => v.id !== id),
-      lines: s.lines.map((l) => (l.voiceId === id ? { ...l, voiceId: null } : l)),
-    })),
-
-  updateVoice: (id, patch) =>
-    set((s) => ({ voices: s.voices.map((v) => (v.id === id ? { ...v, ...patch } : v)) })),
-
-  setGenerated: (blobUrl, hd) => set({ generated: { blobUrl, hd } }),
-}));
+    {
+      name: "mellow-project",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (s) => ({
+        title: s.title,
+        artist: s.artist,
+        lines: s.lines,
+        voices: s.voices,
+        options: s.options,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // blobUrl is transient
+          state.generated = { blobUrl: null, hd: false };
+        }
+      },
+    },
+  ),
+);

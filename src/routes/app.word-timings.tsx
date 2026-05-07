@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Play, Pause, SkipForward } from "lucide-react";
 
 export const Route = createFileRoute("/app/word-timings")({ component: WordTimingsPage });
@@ -14,7 +14,6 @@ function WordTimingsPage() {
   const audio = useAudioState();
   const line = timed[idx];
   const [tapped, setTapped] = useState<number[]>([]);
-  const startRef = useRef<number>(0);
 
   useEffect(() => {
     setTapped(line ? line.words.map((w) => w.offset).filter((o) => o >= 0) : []);
@@ -24,14 +23,13 @@ function WordTimingsPage() {
     if (!line) return;
     audioEngine.seek(line.startTime!);
     audioEngine.play();
-    startRef.current = performance.now();
     setTapped([]);
   };
 
   const tapWord = (i: number) => {
     if (!line) return;
     if (i !== tapped.length) return; // must tap in order
-    const offsetMs = performance.now() - startRef.current;
+    const offsetMs = (audioEngine.currentTime - line.startTime!) * 1000;
     const next = [...tapped, offsetMs];
     setTapped(next);
     if (next.length === line.words.length) {
@@ -99,6 +97,10 @@ function WordTimingsPage() {
             <SkipForward className="h-4 w-4 mr-1" /> Skip line
           </Button>
         </div>
+      </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/generate">Next: Generate →</Link></Button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,6 +60,10 @@ function BasicsPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/options">Next: Options →</Link></Button>
       </div>
     </div>
   );

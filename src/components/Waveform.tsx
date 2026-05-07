@@ -23,6 +23,18 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
   const { time, playing } = useAudioState();
   const [zoom, setZoom] = useState(1);
   const [width, setWidth] = useState(800);
+  const [isLight, setIsLight] = useState(() =>
+    typeof document !== "undefined" && document.documentElement.classList.contains("light"),
+  );
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const obs = new MutationObserver(() => {
+      setIsLight(document.documentElement.classList.contains("light"));
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -47,7 +59,6 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
     ctx.clearRect(0, 0, drawW, height);
 
     const playedX = duration > 0 ? (time / duration) * drawW : 0;
-    const isLight = document.documentElement.classList.contains("light");
     const played = "#8b5cf6";
     const unplayed = isLight ? "#d4d4d8" : "#3f3f46";
 
@@ -71,7 +82,7 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
     // playhead
     ctx.fillStyle = "#ef4444";
     ctx.fillRect(playedX - 1, 0, 2, height);
-  }, [peaks, time, duration, width, zoom, height, markers]);
+  }, [peaks, time, duration, width, zoom, height, markers, isLight]);
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!duration) return;

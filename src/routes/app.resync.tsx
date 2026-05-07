@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,10 @@ function ResyncPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/word-timings">Next: Word Timings →</Link></Button>
       </div>
     </div>
   );

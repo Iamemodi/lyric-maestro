@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -118,6 +118,10 @@ function OptionsPage() {
         <h2 className="font-semibold self-start">Live preview (placeholder lyrics)</h2>
         <PreviewCanvas placeholder width={760} />
         <p className="text-xs text-muted-foreground">Animates over a 12s loop</p>
+      </div>
+
+      <div className="lg:col-span-2 flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/assignments">Next: Assignments →</Link></Button>
       </div>
     </div>
   );

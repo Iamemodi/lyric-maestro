@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +71,10 @@ function AssignmentsPage() {
           ))}
         </div>
       </aside>
+
+      <div className="lg:col-span-2 flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/line-timings">Next: Line Timings →</Link></Button>
+      </div>
     </div>
   );
 }
