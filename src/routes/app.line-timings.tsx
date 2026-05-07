@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
-import { formatTime } from "@/components/Waveform";
+import { formatTime, Waveform } from "@/components/Waveform";
 import { Play } from "lucide-react";
 
 export const Route = createFileRoute("/app/line-timings")({ component: LineTimingsPage });
@@ -40,6 +40,14 @@ function LineTimingsPage() {
     const el = listRef.current?.querySelector(`[data-idx="${safeIdx}"]`) as HTMLElement | null;
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [safeIdx]);
+
+  const markers = lines
+    .filter((l) => l.startTime != null)
+    .map((l) => ({
+      time: l.startTime!,
+      color: voices.find((v) => v.id === l.voiceId)?.color ?? "#6b7280",
+      label: l.text.slice(0, 12),
+    }));
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
@@ -87,15 +95,22 @@ function LineTimingsPage() {
           );
         })}
       </div>
-      <p className="text-xs text-muted-foreground">Tip: click anywhere on the waveform to set the selected line's exact start time.</p>
-      <WaveformClickHandler onTime={(t) => currentLine && setLineStart(currentLine.id, t)} />
+
+      <p className="text-xs text-muted-foreground">Tip: click on the waveform below to set the selected line's exact start time.</p>
+
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Waveform
+          markers={markers}
+          onSeek={(t) => {
+            if (currentLine) setLineStart(currentLine.id, t);
+            audioEngine.seek(t);
+          }}
+        />
+      </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/resync">Next: Resync →</Link></Button>
+      </div>
     </div>
   );
-}
-
-// Tiny invisible component that hijacks waveform seek -> sets line time instead.
-// We do this by listening for a custom event the Waveform doesn't emit; simpler: do nothing.
-// (Direct waveform-seek-to-mark requires more wiring; users can use Mark + scrub via waveform play.)
-function WaveformClickHandler({ onTime: _onTime }: { onTime: (t: number) => void }) {
-  return null;
 }
