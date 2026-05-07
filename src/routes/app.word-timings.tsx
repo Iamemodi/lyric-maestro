@@ -98,6 +98,10 @@ function WordTimingsPage() {
           </Button>
         </div>
       </div>
+
+      <div className="flex justify-end pt-6 border-t border-border mt-8">
+        <Button asChild><Link to="/app/generate">Next: Generate →</Link></Button>
+      </div>
     </div>
   );
 }
