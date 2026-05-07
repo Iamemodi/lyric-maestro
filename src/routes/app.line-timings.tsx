@@ -11,10 +11,45 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/app/line-timings")({ component: LineTimingsPage });
 
 function LineTimingsPage() {
-  const { lines, setLineStart, voices } = useProject();
+  const { lines, setLineStart, voices, audioFile, rawArrayBuffer } = useProject();
   const [activeIdx, setActiveIdx] = useState(() => lines.findIndex((l) => l.startTime == null));
+  const [aiLoading, setAiLoading] = useState(false);
   const audio = useAudioState();
   const listRef = useRef<HTMLDivElement>(null);
+
+  const runAiSync = async () => {
+    if (!lines.length) return toast.error("Add lyrics first.");
+    if (!rawArrayBuffer && !audioFile) return toast.error("Re-upload audio to use AI sync.");
+    setAiLoading(true);
+    const tid = toast.loading("AI is listening to your audio…");
+    try {
+      const buf = rawArrayBuffer ?? (await audioFile!.arrayBuffer());
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      const audioBase64 = btoa(bin);
+      const audioMime = audioFile?.type || "audio/mpeg";
+      const { alignment } = await aiSyncLines({
+        data: { audioBase64, audioMime, lines: lines.map((l) => l.text) },
+      });
+      let applied = 0;
+      for (const a of alignment) {
+        const line = lines[a.index];
+        if (line && typeof a.startSeconds === "number" && a.startSeconds >= 0) {
+          setLineStart(line.id, a.startSeconds);
+          applied++;
+        }
+      }
+      toast.success(`AI synced ${applied}/${lines.length} lines.`, { id: tid });
+    } catch (e: any) {
+      toast.error(e?.message ?? "AI sync failed", { id: tid });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const safeIdx = activeIdx < 0 ? 0 : Math.min(activeIdx, lines.length - 1);
   const currentLine = lines[safeIdx];
