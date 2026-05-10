@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AudioWaveform, Upload } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { AudioWaveform, FileText, Upload } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { audioEngine } from "@/lib/audio-engine";
 import { toast } from "sonner";
+import { validateAudio, validateLyricsFile } from "@/lib/validation";
 
 export const Route = createFileRoute("/")({
   head: () => ({
