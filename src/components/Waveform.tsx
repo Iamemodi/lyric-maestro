@@ -110,7 +110,7 @@ export function Waveform({ markers = [], onSeek, height = 96 }: Props) {
         <div ref={containerRef} className="flex-1 overflow-x-auto overflow-y-hidden" style={{ height }}>
           <canvas ref={ref} onClick={handleClick} className="cursor-pointer" />
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="hidden sm:flex flex-col gap-1">
           <Button size="icon" variant="ghost" onClick={() => setZoom((z) => Math.min(8, z * 1.5))}>
             <ZoomIn className="h-4 w-4" />
           </Button>
