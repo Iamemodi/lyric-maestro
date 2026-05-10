@@ -52,18 +52,70 @@ function WordTimingsPage() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  const runAiWords = async () => {
+    if (!timed.length) return toast.error("Set line timings first.");
+    if (!rawArrayBuffer && !audioFile) return toast.error("Re-upload audio to use AI sync.");
+    const sizeBytes = rawArrayBuffer?.byteLength ?? audioFile?.size ?? 0;
+    if (sizeBytes > 20 * 1024 * 1024) return toast.error("Audio is over 20MB — trim or compress before AI sync.");
+    setAiLoading(true);
+    const tid = toast.loading("AI is aligning words…");
+    try {
+      const buf = rawArrayBuffer ?? (await audioFile!.arrayBuffer());
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      const audioBase64 = btoa(bin);
+      const audioMime = audioFile?.type || "audio/mpeg";
+
+      const indexed = lines
+        .map((l, i) => ({ line: l, index: i }))
+        .filter((x) => x.line.startTime != null);
+      const sorted = [...indexed].sort((a, b) => a.line.startTime! - b.line.startTime!);
+      const endByIndex = new Map<number, number>();
+      for (let i = 0; i < sorted.length; i++) {
+        const next = sorted[i + 1]?.line.startTime ?? sorted[i].line.startTime! + 8;
+        endByIndex.set(sorted[i].index, next);
+      }
+      const payloadLines = indexed.map((x) => ({
+        index: x.index,
+        text: x.line.text,
+        startSeconds: x.line.startTime!,
+        endSeconds: endByIndex.get(x.index) ?? x.line.startTime! + 8,
+      }));
+      const { lines: res } = await aiSyncWords({ data: { audioBase64, audioMime, lines: payloadLines } });
+      let applied = 0;
+      for (const r of res) {
+        const target = lines[r.lineIndex];
+        if (target && Array.isArray(r.wordOffsetsMs) && r.wordOffsetsMs.length) {
+          setWordOffsets(target.id, r.wordOffsetsMs);
+          applied++;
+        }
+      }
+      toast.success(`AI aligned words for ${applied} lines.`, { id: tid });
+    } catch (e: any) {
+      toast.error(e?.message ?? "AI word sync failed", { id: tid });
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (!timed.length) {
     return <div className="max-w-2xl mx-auto"><h1 className="text-2xl font-bold mb-2">Word Timings</h1><p className="text-sm text-muted-foreground">Set line timings first.</p></div>;
   }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold">Word Timings</h1>
           <p className="text-sm text-muted-foreground">Press play, then tap each word as it's sung. <kbd className="px-1 rounded bg-muted">Space</kbd> works too.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={runAiWords} disabled={aiLoading} variant="secondary" size="sm">
+            {aiLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
+            AI Sync Words
+          </Button>
           <Button size="icon" variant="outline" onClick={() => setIdx((i) => Math.max(0, i - 1))} disabled={idx === 0}><ChevronLeft className="h-4 w-4" /></Button>
           <span className="text-sm tabular-nums">{idx + 1} / {timed.length}</span>
           <Button size="icon" variant="outline" onClick={() => setIdx((i) => Math.min(timed.length - 1, i + 1))} disabled={idx >= timed.length - 1}><ChevronRight className="h-4 w-4" /></Button>
