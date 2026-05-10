@@ -52,6 +52,9 @@ export interface ProjectState {
   voices: Voice[];
   options: VideoOptions;
 
+  coverImageDataUrl: string | null;
+  loadProgress: LoadProgress;
+
   generated: { blobUrl: string | null; hd: boolean };
 
   loadFile: (file: File) => Promise<void>;
@@ -69,6 +72,7 @@ export interface ProjectState {
   removeVoice: (id: string) => void;
   updateVoice: (id: string, patch: Partial<Voice>) => void;
   setGenerated: (blobUrl: string | null, hd: boolean) => void;
+  setCoverImage: (dataUrl: string | null) => void;
 }
 
 const defaultVoices: Voice[] = [
@@ -91,6 +95,8 @@ const defaultOptions: VideoOptions = {
   voiceMode: "color",
   introSeconds: 3,
   outroSeconds: 3,
+  useImageBackground: false,
+  useImageIntro: false,
 };
 
 const newId = () => Math.random().toString(36).slice(2, 10);
