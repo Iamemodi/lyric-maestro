@@ -144,7 +144,20 @@ function UploadPage() {
               placeholder={"Is this the real life\nIs this just fantasy\n…"}
               className="min-h-[180px] font-mono text-sm"
             />
-            <p className="text-xs text-muted-foreground">{lyrics.split("\n").filter((l) => l.trim()).length} lines</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">{lyrics.split("\n").filter((l) => l.trim()).length} lines</p>
+              <label>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".txt,text/plain"
+                  onChange={(e) => e.target.files?.[0] && onLyricsFile(e.target.files[0])}
+                />
+                <span className="inline-flex items-center gap-1 text-xs cursor-pointer rounded-md border border-border px-2 py-1 hover:bg-accent">
+                  <FileText className="h-3 w-3" /> Load .txt
+                </span>
+              </label>
+            </div>
           </section>
         </div>
 
