@@ -3,12 +3,15 @@ import { useProject } from "@/store/project";
 import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Play, Pause, SkipForward } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Pause, SkipForward, Sparkles, Loader2 } from "lucide-react";
+import { aiSyncWords } from "@/lib/ai-sync.functions";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/word-timings")({ component: WordTimingsPage });
 
 function WordTimingsPage() {
-  const { lines, setWordOffsets, skipWordTimings } = useProject();
+  const { lines, setWordOffsets, skipWordTimings, audioFile, rawArrayBuffer } = useProject();
+  const [aiLoading, setAiLoading] = useState(false);
   const timed = lines.filter((l) => l.startTime != null);
   const [idx, setIdx] = useState(0);
   const audio = useAudioState();
