@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useProject } from "@/store/project";
 import { drawFrame, getCanvasSize } from "@/lib/karaoke-renderer";
 import { useAudioState } from "@/lib/audio-engine";
+import { useCoverImage } from "@/lib/use-cover-image";
 
 interface Props {
   width?: number;
