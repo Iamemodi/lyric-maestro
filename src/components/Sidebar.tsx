@@ -43,13 +43,13 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-[220px] shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
-      <div className="p-4 border-b border-sidebar-border">
-        <Link to="/" className="flex items-center gap-2">
-          <AudioWaveform className="h-5 w-5 text-primary" />
-          <span className="font-bold tracking-wide">MELLOW</span>
+    <aside className="w-[64px] md:w-[220px] shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground flex flex-col">
+      <div className="p-3 md:p-4 border-b border-sidebar-border">
+        <Link to="/" className="flex items-center gap-2 justify-center md:justify-start">
+          <AudioWaveform className="h-5 w-5 text-primary shrink-0" />
+          <span className="font-bold tracking-wide hidden md:inline">MELLOW</span>
         </Link>
-        <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Karaoke Studio</p>
+        <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider hidden md:block">Karaoke Studio</p>
       </div>
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
         {items.map((it) => {
@@ -60,21 +60,22 @@ export function Sidebar() {
             <Link
               key={it.to}
               to={it.to}
+              title={it.label}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                "flex items-center gap-3 rounded-md px-2 md:px-3 py-2 text-sm transition-colors justify-center md:justify-start",
                 active
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground",
               )}
             >
-              <Icon className="h-4 w-4" />
-              <span className="flex-1">{it.label}</span>
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1 hidden md:inline">{it.label}</span>
               {done && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
             </Link>
           );
         })}
       </nav>
-      <div className="p-3 text-[11px] text-muted-foreground border-t border-sidebar-border">
+      <div className="p-3 text-[11px] text-muted-foreground border-t border-sidebar-border hidden md:block">
         100% in your browser
       </div>
     </aside>
