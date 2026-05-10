@@ -19,7 +19,8 @@ function ColorInput({ value, onChange, label }: { value: string; onChange: (v: s
 }
 
 function OptionsPage() {
-  const { options, updateOptions } = useProject();
+  const { options, updateOptions, coverImageDataUrl } = useProject();
+  const hasImage = !!coverImageDataUrl;
   return (
     <div className="grid lg:grid-cols-[360px_1fr] gap-6">
       <div className="space-y-4">
@@ -44,6 +45,27 @@ function OptionsPage() {
               </div>
             </div>
             <ColorInput label="Background" value={options.backgroundColor} onChange={(v) => updateOptions({ backgroundColor: v })} />
+
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="text-sm font-medium">Cover image</Label>
+              {!hasImage && <p className="text-xs text-muted-foreground">Upload an image on the Basics page to enable.</p>}
+              <label className="flex items-center justify-between gap-2 text-sm">
+                <span className={hasImage ? "" : "text-muted-foreground"}>Use as background</span>
+                <Switch
+                  disabled={!hasImage}
+                  checked={options.useImageBackground}
+                  onCheckedChange={(v) => updateOptions({ useImageBackground: v, useImageIntro: v ? false : options.useImageIntro })}
+                />
+              </label>
+              <label className="flex items-center justify-between gap-2 text-sm">
+                <span className={hasImage ? "" : "text-muted-foreground"}>Show during intro only</span>
+                <Switch
+                  disabled={!hasImage}
+                  checked={options.useImageIntro}
+                  onCheckedChange={(v) => updateOptions({ useImageIntro: v, useImageBackground: v ? false : options.useImageBackground })}
+                />
+              </label>
+            </div>
           </TabsContent>
 
           <TabsContent value="text" className="space-y-4 pt-4">
