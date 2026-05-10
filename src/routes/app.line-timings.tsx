@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { formatTime, Waveform } from "@/components/Waveform";
 import { Play, Sparkles, Loader2 } from "lucide-react";
-import { aiSyncLines } from "@/lib/ai-sync.functions";
+import { aiSyncLines, aiSyncWords } from "@/lib/ai-sync.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/line-timings")({ component: LineTimingsPage });
 
 function LineTimingsPage() {
-  const { lines, setLineStart, voices, audioFile, rawArrayBuffer } = useProject();
+  const { lines, setLineStart, setWordOffsets, voices, audioFile, rawArrayBuffer } = useProject();
   const [activeIdx, setActiveIdx] = useState(() => lines.findIndex((l) => l.startTime == null));
   const [aiLoading, setAiLoading] = useState(false);
   const audio = useAudioState();
@@ -20,6 +20,9 @@ function LineTimingsPage() {
   const runAiSync = async () => {
     if (!lines.length) return toast.error("Add lyrics first.");
     if (!rawArrayBuffer && !audioFile) return toast.error("Re-upload audio to use AI sync.");
+    const sizeBytes = rawArrayBuffer?.byteLength ?? audioFile?.size ?? 0;
+    if (sizeBytes > 20 * 1024 * 1024)
+      return toast.error("Audio is over 20MB — trim or compress before AI sync.");
     setAiLoading(true);
     const tid = toast.loading("AI is listening to your audio…");
     try {
@@ -36,14 +39,52 @@ function LineTimingsPage() {
         data: { audioBase64, audioMime, lines: lines.map((l) => l.text) },
       });
       let applied = 0;
+      const updatedStarts = new Map<number, number>();
       for (const a of alignment) {
         const line = lines[a.index];
         if (line && typeof a.startSeconds === "number" && a.startSeconds >= 0) {
           setLineStart(line.id, a.startSeconds);
+          updatedStarts.set(a.index, a.startSeconds);
           applied++;
         }
       }
-      toast.success(`AI synced ${applied}/${lines.length} lines.`, { id: tid });
+      toast.success(`AI synced ${applied}/${lines.length} lines. Aligning words…`, { id: tid });
+
+      // Word-level sync (best-effort)
+      try {
+        const wordInputs = lines
+          .map((l, i) => ({ line: l, index: i, start: updatedStarts.get(i) ?? l.startTime }))
+          .filter((x) => x.start != null) as { line: typeof lines[number]; index: number; start: number }[];
+        // Sort by start to compute end windows
+        const sorted = [...wordInputs].sort((a, b) => a.start - b.start);
+        const endByIndex = new Map<number, number>();
+        for (let i = 0; i < sorted.length; i++) {
+          const next = sorted[i + 1]?.start ?? sorted[i].start + 8;
+          endByIndex.set(sorted[i].index, next);
+        }
+        const payloadLines = wordInputs.map((x) => ({
+          index: x.index,
+          text: x.line.text,
+          startSeconds: x.start,
+          endSeconds: endByIndex.get(x.index) ?? x.start + 8,
+        }));
+        if (payloadLines.length) {
+          const { lines: wordRes } = await aiSyncWords({
+            data: { audioBase64, audioMime, lines: payloadLines },
+          });
+          let wApplied = 0;
+          for (const r of wordRes) {
+            const line = lines[r.lineIndex];
+            if (line && Array.isArray(r.wordOffsetsMs) && r.wordOffsetsMs.length) {
+              setWordOffsets(line.id, r.wordOffsetsMs);
+              wApplied++;
+            }
+          }
+          toast.success(`AI synced ${applied} lines and ${wApplied} word tracks.`, { id: tid });
+        }
+      } catch (we: any) {
+        toast.warning(`Lines synced. Word alignment skipped: ${we?.message ?? "error"}`, { id: tid });
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "AI sync failed", { id: tid });
     } finally {
