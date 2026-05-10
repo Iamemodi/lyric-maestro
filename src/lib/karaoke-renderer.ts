@@ -9,6 +9,7 @@ export interface RenderInput {
   artist: string;
   width: number;
   height: number;
+  coverImage?: HTMLImageElement | null;
 }
 
 export function getCanvasSize(aspect: "16:9" | "4:3", base = 720) {
@@ -22,14 +23,46 @@ function voiceColor(voices: Voice[], id: string | null, fallback: string) {
 }
 
 export function drawFrame(ctx: CanvasRenderingContext2D, input: RenderInput) {
-  const { options, lines, voices, time, width, height, title, artist } = input;
+  const { options, lines, voices, time, width, height, title, artist, coverImage } = input;
+
+  // Background fill
   ctx.fillStyle = options.backgroundColor;
   ctx.fillRect(0, 0, width, height);
 
   const firstStart = lines.find((l) => l.startTime != null)?.startTime ?? options.introSeconds;
+  const isIntro = time < firstStart - 0.05;
+
+  // Image background (cover-fit) drawn behind everything
+  const drawCover = (alpha = 1) => {
+    if (!coverImage || !coverImage.complete || !coverImage.naturalWidth) return false;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const ir = coverImage.naturalWidth / coverImage.naturalHeight;
+    const cr = width / height;
+    let dw = width, dh = height, dx = 0, dy = 0;
+    if (ir > cr) { dh = height; dw = height * ir; dx = (width - dw) / 2; }
+    else { dw = width; dh = width / ir; dy = (height - dh) / 2; }
+    ctx.drawImage(coverImage, dx, dy, dw, dh);
+    ctx.restore();
+    return true;
+  };
+
+  const showImageBg = options.useImageBackground && coverImage;
+  const showImageIntro = options.useImageIntro && coverImage && isIntro;
+
+  if (showImageBg) {
+    drawCover(1);
+    // dim overlay for legibility
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.fillRect(0, 0, width, height);
+  } else if (showImageIntro) {
+    drawCover(1);
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0, 0, width, height);
+  }
 
   // Intro card
-  if (time < firstStart - 0.05) {
+  if (isIntro) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const titleSize = Math.round(options.fontSize * 1.3);

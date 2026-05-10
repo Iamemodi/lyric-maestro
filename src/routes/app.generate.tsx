@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useRef, useState } from "react";
 import { drawFrame, getCanvasSize } from "@/lib/karaoke-renderer";
+import { useCoverImage } from "@/lib/use-cover-image";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/generate")({ component: GeneratePage });
 
 function GeneratePage() {
   const { options, lines, voices, title, artist, audioFile, duration, setGenerated } = useProject();
+  const coverImage = useCoverImage();
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<"idle" | "loading" | "rendering" | "encoding" | "done" | "error">("idle");
   const [eta, setEta] = useState<string>("");
@@ -59,7 +61,7 @@ function GeneratePage() {
         if (cancelRef.current) throw new Error("cancelled");
         const t = f / fps;
         ctx.setTransform(scale, 0, 0, scale, 0, 0);
-        drawFrame(ctx, { options, lines, voices, time: t, title, artist, width: w, height: h });
+        drawFrame(ctx, { options, lines, voices, time: t, title, artist, width: w, height: h, coverImage });
 
         const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), "image/jpeg", 0.85)!);
         const buf = new Uint8Array(await blob.arrayBuffer());

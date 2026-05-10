@@ -1,110 +1,82 @@
-# MELLOW — Karaoke Video Creator
+# Plan — Upload, validation, image, per-word AI sync
 
-A full in-browser karaoke video maker. Users upload audio, paste lyrics, sync them word-by-word, customize the look, and export an MP4 — all client-side.
+## 1. Validation utility (new)
 
-## Tech & conventions
+`src/lib/validation.ts` — pure functions used by upload UIs:
+- `validateAudio(file)` — accepts `.mp3 .wav .m4a .flac` (and `.ogg .mp4` kept for back-compat); max **100 MB**
+- `validateImage(file)` — accepts `.jpg .jpeg .png .gif`; max **10 MB**
+- `validateLyricsFile(file)` — accepts `.txt`; max **1 MB**
+- Each returns `{ ok: true } | { ok: false, error: string }` with friendly messages (wrong type, too large, empty)
 
-- TanStack Router (file-based) for the step navigation
-- Zustand for global project state (single store, persisted to `sessionStorage` so a refresh mid-flow doesn't wipe progress; the raw `ArrayBuffer` and `File` are kept in-memory only)
-- Tailwind v4 + shadcn/ui (existing setup), dark violet theme as default with a light/dark toggle
-- Web Audio API for decoding + playback; canvas-drawn waveform (downsampled to ~3000 amplitude bars)
-- `@ffmpeg/ffmpeg` + `@ffmpeg/util` for the final MP4 mux (loaded lazily on the Generate page only — heavy WASM)
-- Client-only everything: no server functions, no DB
+## 2. Store changes (`src/store/project.ts`)
 
-## Theme
+Add to `ProjectState`:
+- `coverImageDataUrl: string | null` (persisted — small data URL after downscale)
+- `options.useImageBackground: boolean` (default false)
+- `options.useImageIntro: boolean` (default false)
 
-Dark mode default. Accent `#6D28D9` (violet) wired into `--primary`. Waveform played portion uses accent; unplayed uses `--muted-foreground` at low opacity. Light/dark toggle in the top-right of the app shell.
+New actions:
+- `loadCoverImage(file)` — validates, downscales to max 1920px via canvas, stores as JPEG data URL
+- `clearCoverImage()`
 
-## Routes
+`partialize` includes `coverImageDataUrl` so it survives reload.
 
-```
-src/routes/
-  __root.tsx           QueryClient + theme + Toaster
-  index.tsx            Upload page (entry)
-  app.tsx              App shell layout (sidebar + waveform bar + <Outlet/>)
-  app.basics.tsx
-  app.options.tsx
-  app.assignments.tsx
-  app.line-timings.tsx
-  app.resync.tsx
-  app.word-timings.tsx
-  app.generate.tsx
-  app.video.tsx
-  app.remix.tsx
-```
+## 3. Upload page (`src/routes/index.tsx`)
 
-The `/app` layout guards against missing audio — if no file is loaded, redirect to `/`.
+- Wire `validateAudio` into `onFile`; surface toast errors.
+- Add a **Load .txt** button under the lyrics textarea — reads file, validates, fills the textarea.
+- Add an **upload progress bar** (FileReader/decode is fast but we surface a determinate bar during `loadFile`: bytes read → decoding → peaks).
+  - Add `loadProgress: { phase: 'idle'|'reading'|'decoding'|'peaks'|'done', percent: number }` to the store; `loadFile` updates it; UI shows shadcn `<Progress />`.
 
-## Global store (`src/store/project.ts`)
+## 4. Basics page (`src/routes/app.basics.tsx`)
 
-Holds the `ProjectState` from Step 13 plus playback state:
-- `audioFile`, `audioBuffer` (decoded `AudioBuffer`), `rawArrayBuffer`
-- `title`, `artist`, `lines: LyricLine[]`, `voices: Voice[]`, `options: VideoOptions`
-- `playback: { isPlaying, currentTime, duration, zoom }`
-- `generated: { blobUrl, progress, status }`
-- Actions: `loadFile`, `setLyrics`, `assignVoice`, `setLineStart`, `setWordOffsets`, `applyGlobalOffset`, `updateOptions`, etc.
+Add two new cards:
+- **Replace lyrics** — textarea + "Load .txt" with the same validator; calls `setLyrics`.
+- **Cover image** — drop zone using `validateImage` + `loadCoverImage`, preview thumbnail, remove button.
 
-Default voices seeded: Voice 1 (#10B981), Voice 2 (#06B6D4), Voice 3 (#F59E0B). Default options match the spec (16:9, dark bg, system sans, fontSize 48, scroll mode, color voice mode, 3s intro/outro).
+## 5. Options page (`src/routes/app.options.tsx`)
 
-## Shared components
+Add a "Background" section:
+- Toggle: **Use image as background** (disabled if no cover image)
+- Toggle: **Show image during intro only** (mutually exclusive with above; if both off → solid color)
+- Live preview reflects choice via `PreviewCanvas`.
 
-- `WaveformBar` — canvas, props `{ peaks, currentTime, duration, zoom, onSeek, markers? }`. Used on Line Timings, Resync, Word Timings, Assignments. Single instance lives in the app shell at the bottom; pages register optional markers/click handlers via a small context.
-- `AudioEngine` — singleton wrapping a single `<audio>` element fed from a `URL.createObjectURL` of the uploaded file. Exposes `play/pause/seek` and pushes `currentTime` updates via `requestAnimationFrame`.
-- `PreviewCanvas` — pure renderer: given `(options, lines, voices, currentTime)` paints one karaoke frame to a canvas. Used by Options preview AND by the Generate step (frame-by-frame).
-- `Sidebar` — fixed 220px, lists steps with active highlight using `useRouterState`.
+## 6. Renderer (`src/lib/karaoke-renderer.ts`)
 
-## Page-by-page
+Extend `drawFrame` opts:
+- Accept optional `coverImage: HTMLImageElement | null`
+- Before painting solid background:
+  - If `useImageBackground` and image loaded → draw cover (cover-fit) then dark overlay for legibility
+  - Else if `useImageIntro` and `time < introSeconds` → draw cover full-bleed with title/artist overlay; skip lyric layer
+  - Else → existing solid color
+- `PreviewCanvas` and the FFmpeg frame loop both pass a preloaded `HTMLImageElement` (decoded once from `coverImageDataUrl`).
 
-**`/` Upload** — Three-column layout: drop zone (reads file → `ArrayBuffer`, decodes via `AudioContext.decodeAudioData` in background), title/artist inputs, lyrics textarea. Submit → navigate `/app/basics`.
+## 7. Per-word AI sync (`src/lib/ai-sync.functions.ts` + line-timings page)
 
-**`/app/basics`** — Editable title/artist, read-only line list, "Edit lyrics" button reopens textarea in a Dialog.
+- Add a second server fn `aiSyncWords` that takes `{ audioBase64, audioMime, lines: [{index, text, startSeconds, endSeconds}] }` and returns `[{ lineIndex, wordOffsetsMs: number[] }]` via Gemini tool calling (`submit_word_alignment`).
+- After `aiSyncLines` succeeds, automatically chain `aiSyncWords` (using line start + next-line start as window) and call `setWordOffsets` per line.
+- Add a separate **"AI Sync Words"** button on the **Word Timings** page for re-running just word sync; show `Loader2` spinner and toast on success/error.
+- Validate audio size (<20 MB) before sending; show explicit error if larger.
 
-**`/app/options`** — Left settings panel with tabs (Video / Text / Frames / Voices) using shadcn `Tabs`. Right side `PreviewCanvas` rendering lorem ipsum lines using current options. Live updates via store subscription.
+## 8. Cross-device responsive pass
 
-**`/app/assignments`** — Scrollable line list. Each row: voice color chip + lyric text. Click cycles voice; long-click / chevron opens a `Popover` with voice picker. Side panel manages voices (add/remove/recolor with shadcn color input).
+- Sidebar: collapse to a top bar with horizontal scroll on `<md` breakpoints.
+- Upload page grid: already `md:grid-cols-3` — make sections stack cleanly on mobile, ensure drop zone min-height shrinks.
+- Waveform footer: hide zoom buttons on `<sm`, keep play/seek + time.
+- Generate/Video pages: ensure preview canvas scales to container width.
 
-**`/app/line-timings`** — Line list with currently-active line highlighted in voice color. Spacebar handler (`useEffect` on window): records `audioEngine.currentTime` to active line, advances. "Mark" button mirrors spacebar. Waveform click sets timestamp for the selected line. Each line shows formatted time (`m:ss.x`) or muted dash. "Play from here" button per line.
+## 9. Error handling polish
 
-**`/app/resync`** — Slider `-5..+5s` (step 0.05). Live shows new times for first 5 lines. Apply button writes offset into all `startTime`s. "Reset all timings" with confirm dialog.
+- Single `useUploadError` toast helper to standardize messages.
+- Network/AI failures: catch 402/429 from gateway and show actionable toast ("Add credits" / "Slow down").
+- Guard all `URL.createObjectURL` with cleanup on unmount where applicable.
 
-**`/app/word-timings`** — One line at a time. Words rendered as large chips. Spacebar or chip click records `(performance.now() - lineStartWallClock)` offset. Auto-advance when all words tapped. "Skip line" sets `words: []` (renderer falls back to whole-line highlight). Prev/Next line buttons.
+## Out of scope
 
-**`/app/generate`** — Lazy-imports `@ffmpeg/ffmpeg`. Pipeline:
-1. Create offscreen canvas at target resolution (1280×720 SD or 1920×1080 HD).
-2. For frame `f` at time `t = f / fps`, call `PreviewCanvas.drawFrame(t)`.
-3. Encode frames as PNG sequence written to FFmpeg's MEMFS (`writeFile('frame_0001.png', ...)`), batching ~30 frames at a time and yielding to keep UI responsive.
-4. Write original audio file to MEMFS.
-5. Run `ffmpeg -framerate 30 -i frame_%04d.png -i audio.ext -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest out.mp4`.
-6. Read result → Blob → object URL → store.
+- No backend storage — all uploads stay in-browser (matches existing architecture).
+- No new routes; everything fits into existing 9-step flow.
 
-Progress bar fed from FFmpeg `progress` callback + frame-render percentage. Cancel button aborts the loop and `ffmpeg.terminate()`s. ETA from rolling average frame time.
+## Files touched
 
-**`/app/video`** — `<video controls>` with the generated blob. Buttons: Download (anchor with `download` attr), Finalize in HD (re-runs generate at 1080p with warning dialog), three placeholder icon buttons (Instrument separation / Crowd / Vocal-up) showing "Coming soon" toast.
-
-**`/app/remix`** — Grid of cards, one per previous step, each with description + "Edit" link back to that step. State persists in the store, so edits are non-destructive.
-
-## Renderer details (`PreviewCanvas`)
-
-Pure function `drawFrame(ctx, { options, lines, voices, time })`:
-- Fill background.
-- Find active line (largest `startTime <= time`). If `time < firstLineStart` and intro frame configured, draw title card (title + artist centered).
-- Display modes:
-  - `fixed-1`: only the active line, centered.
-  - `fixed-3`: previous + active + next, active in center, others dimmed with `sungColor`/`upcomingColor`.
-  - `scroll`: vertical list, smooth-scrolled so active is centered.
-- Within active line: if `words` populated, color words whose `offset <= (time - lineStart)*1000` with `activeColor` (or voice color in color mode); remaining words use `upcomingColor`. If no word timings, color the whole line with active color.
-- Voice mode `title`: render `voice.label` above the line in voice color; line text in `activeColor`.
-- Voice mode `color`: active word/line uses voice color directly.
-
-Same function powers both the live preview and FFmpeg frame export — guarantees WYSIWYG.
-
-## Risks / notes
-
-- FFmpeg WASM bundle is ~25MB; loaded only when Generate is opened, with a "Loading encoder…" state. Cross-origin isolation headers (`COOP`/`COEP`) are needed for SharedArrayBuffer; we'll ship the single-threaded build of `@ffmpeg/ffmpeg` to avoid that requirement (slower but works without server header changes).
-- Long videos × HD: encoding can take minutes. The progress bar + cancellation make this tolerable.
-- Spacebar in inputs: handler ignores events when `event.target` is an input/textarea.
-- Refresh wipes the audio file (Files can't be revived from sessionStorage). On `/app/*` routes if `audioFile` is null, redirect to `/` with a toast explaining.
-
-## Out of scope (placeholders only)
-
-Instrument separation, crowd mode, vocal-up — buttons render a "Coming soon" toast.
+- new: `src/lib/validation.ts`
+- edit: `src/store/project.ts`, `src/routes/index.tsx`, `src/routes/app.basics.tsx`, `src/routes/app.options.tsx`, `src/lib/karaoke-renderer.ts`, `src/components/PreviewCanvas.tsx`, `src/components/Sidebar.tsx`, `src/components/Waveform.tsx`, `src/lib/ai-sync.functions.ts`, `src/routes/app.line-timings.tsx`, `src/routes/app.word-timings.tsx`, `src/routes/app.generate.tsx`

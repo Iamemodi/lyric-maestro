@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useProject } from "@/store/project";
 import { drawFrame, getCanvasSize } from "@/lib/karaoke-renderer";
 import { useAudioState } from "@/lib/audio-engine";
+import { useCoverImage } from "@/lib/use-cover-image";
 
 interface Props {
   width?: number;
@@ -21,6 +22,7 @@ export function PreviewCanvas({ width = 760, time, placeholder = false, classNam
   const ref = useRef<HTMLCanvasElement>(null);
   const { options, lines, voices, title, artist } = useProject();
   const audio = useAudioState();
+  const cover = useCoverImage();
   const t = time ?? audio.time;
 
   const { w, h } = getCanvasSize(options.aspectRatio);
@@ -44,8 +46,9 @@ export function PreviewCanvas({ width = 760, time, placeholder = false, classNam
       artist: placeholder ? "Artist Name" : artist,
       width: w,
       height: h,
+      coverImage: cover,
     });
-  }, [options, lines, voices, t, title, artist, placeholder, w, h]);
+  }, [options, lines, voices, t, title, artist, placeholder, w, h, cover]);
 
   return (
     <canvas
