@@ -26,7 +26,7 @@ export const Route = createFileRoute("/")({
 
 function UploadPage() {
   const navigate = useNavigate();
-  const { audioFile, loadFile, setMeta, setLyrics, title, artist } = useProject();
+  const { audioFile, loadFile, setMeta, setLyrics, title, artist, loadProgress } = useProject();
   const [t, setT] = useState(title);
   const [a, setA] = useState(artist);
   const [lyrics, setLyricsLocal] = useState("");
@@ -34,6 +34,8 @@ function UploadPage() {
   const [drag, setDrag] = useState(false);
 
   const onFile = useCallback(async (file: File) => {
+    const v = validateAudio(file);
+    if (!v.ok) return toast.error(v.error);
     setBusy(true);
     try {
       await loadFile(file);
@@ -46,6 +48,18 @@ function UploadPage() {
       setBusy(false);
     }
   }, [loadFile]);
+
+  const onLyricsFile = async (file: File) => {
+    const v = validateLyricsFile(file);
+    if (!v.ok) return toast.error(v.error);
+    try {
+      const text = await file.text();
+      setLyricsLocal(text);
+      toast.success(`Loaded ${file.name}`);
+    } catch {
+      toast.error("Could not read lyrics file");
+    }
+  };
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -87,41 +101,34 @@ function UploadPage() {
             onDrop={onDrop}
             className={"rounded-xl border-2 border-dashed p-6 transition-colors " + (drag ? "border-primary bg-primary/5" : "border-border")}
           >
-            <div className="flex flex-col items-center justify-center h-full text-center gap-3 min-h-[260px]">
+            <div className="flex flex-col items-center justify-center h-full text-center gap-3 min-h-[220px] sm:min-h-[260px]">
               <Upload className="h-10 w-10 text-primary" />
               <div>
                 <p className="font-medium">Drop your audio or video</p>
-                <p className="text-xs text-muted-foreground">.mp3, .m4a, .wav, .ogg, .mp4</p>
+                <p className="text-xs text-muted-foreground">MP3, WAV, M4A, FLAC, OGG, MP4 · max 100MB</p>
               </div>
               <label>
                 <input
                   type="file"
                   className="hidden"
-                  accept=".mp3,.m4a,.mp4,.wav,.ogg,audio/*,video/*"
+                  accept=".mp3,.m4a,.mp4,.wav,.ogg,.flac,audio/*,video/*"
                   onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
                 />
                 <span className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium cursor-pointer hover:bg-primary/90">
                   {busy ? "Loading…" : "Browse"}
                 </span>
               </label>
-              {audioFile && (
+              {busy && (
+                <div className="w-full space-y-1">
+                  <Progress value={loadProgress.percent} />
+                  <p className="text-[11px] text-muted-foreground capitalize">{loadProgress.phase}…</p>
+                </div>
+              )}
+              {!busy && audioFile && (
                 <p className="text-xs text-foreground mt-2 truncate max-w-full" title={audioFile.name}>
                   ✓ {audioFile.name}
                 </p>
               )}
-            </div>
-          </section>
-
-          {/* Metadata */}
-          <section className="rounded-xl border border-border p-6 space-y-4">
-            <h3 className="font-semibold">Metadata</h3>
-            <div className="space-y-2">
-              <Label>Song title</Label>
-              <Input value={t} onChange={(e) => setT(e.target.value)} placeholder="e.g. Bohemian Rhapsody" />
-            </div>
-            <div className="space-y-2">
-              <Label>Artist</Label>
-              <Input value={a} onChange={(e) => setA(e.target.value)} placeholder="e.g. Queen" />
             </div>
           </section>
 
