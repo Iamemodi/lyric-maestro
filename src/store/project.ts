@@ -129,16 +129,20 @@ export const useProject = create<ProjectState>()(
       lines: [],
       voices: defaultVoices,
       options: defaultOptions,
+      coverImageDataUrl: null,
+      loadProgress: { phase: "idle", percent: 0 },
       generated: { blobUrl: null, hd: false },
 
       loadFile: async (file) => {
+        set({ loadProgress: { phase: "reading", percent: 5 } });
         const arr = await file.arrayBuffer();
         const url = URL.createObjectURL(file);
-        set({ audioFile: file, audioUrl: url, rawArrayBuffer: arr });
+        set({ audioFile: file, audioUrl: url, rawArrayBuffer: arr, loadProgress: { phase: "decoding", percent: 35 } });
         try {
           const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
           const ctx = new AC();
           const buf = await ctx.decodeAudioData(arr.slice(0));
+          set({ loadProgress: { phase: "peaks", percent: 70 } });
           const target = 3000;
           const channel = buf.getChannelData(0);
           const block = Math.max(1, Math.floor(channel.length / target));
@@ -153,10 +157,11 @@ export const useProject = create<ProjectState>()(
             }
             peaks[i] = max;
           }
-          set({ audioBuffer: buf, peaks, duration: buf.duration });
+          set({ audioBuffer: buf, peaks, duration: buf.duration, loadProgress: { phase: "done", percent: 100 } });
           ctx.close();
         } catch (e) {
           console.error("decode failed", e);
+          set({ loadProgress: { phase: "error", percent: 0 } });
         }
       },
 
@@ -223,6 +228,7 @@ export const useProject = create<ProjectState>()(
         set((s) => ({ voices: s.voices.map((v) => (v.id === id ? { ...v, ...patch } : v)) })),
 
       setGenerated: (blobUrl, hd) => set({ generated: { blobUrl, hd } }),
+      setCoverImage: (dataUrl) => set({ coverImageDataUrl: dataUrl }),
     }),
     {
       name: "mellow-project",
@@ -233,6 +239,7 @@ export const useProject = create<ProjectState>()(
         lines: s.lines,
         voices: s.voices,
         options: s.options,
+        coverImageDataUrl: s.coverImageDataUrl,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
