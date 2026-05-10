@@ -29,7 +29,14 @@ export interface VideoOptions {
   voiceMode: "color" | "title";
   introSeconds: number;
   outroSeconds: number;
+  useImageBackground: boolean;
+  useImageIntro: boolean;
 }
+
+export type LoadProgress = {
+  phase: "idle" | "reading" | "decoding" | "peaks" | "done" | "error";
+  percent: number;
+};
 
 export interface ProjectState {
   audioFile: File | null;
