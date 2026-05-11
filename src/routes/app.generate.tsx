@@ -105,6 +105,14 @@ function GeneratePage() {
       const dataU8 = data as Uint8Array;
       const blob = new Blob([dataU8.buffer.slice(dataU8.byteOffset, dataU8.byteOffset + dataU8.byteLength) as ArrayBuffer], { type: "video/mp4" });
       const url = URL.createObjectURL(blob);
+      // Clean up MEMFS to free memory on long renders.
+      try {
+        for (let f = 0; f < totalFrames; f++) {
+          await ffmpeg.deleteFile(`f_${String(f).padStart(5, "0")}.jpg`);
+        }
+        await ffmpeg.deleteFile(audioName);
+        await ffmpeg.deleteFile("out.mp4");
+      } catch {}
       setGenerated(url, hd);
       setProgress(100);
       setStatus("done");
