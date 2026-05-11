@@ -4,13 +4,13 @@ import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Play, Pause, SkipForward, Sparkles, Loader2 } from "lucide-react";
-import { aiSyncWords } from "@/lib/ai-sync.functions";
+import { detectOnsets, alignWords } from "@/lib/sync-engine";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/word-timings")({ component: WordTimingsPage });
 
 function WordTimingsPage() {
-  const { lines, setWordOffsets, skipWordTimings, audioFile, rawArrayBuffer } = useProject();
+  const { lines, setWordOffsets, skipWordTimings, audioBuffer } = useProject();
   const [aiLoading, setAiLoading] = useState(false);
   const timed = lines.filter((l) => l.startTime != null);
   const [idx, setIdx] = useState(0);
@@ -54,20 +54,13 @@ function WordTimingsPage() {
 
   const runAiWords = async () => {
     if (!timed.length) return toast.error("Set line timings first.");
-    if (!rawArrayBuffer && !audioFile) return toast.error("Re-upload audio to use AI sync.");
-    const sizeBytes = rawArrayBuffer?.byteLength ?? audioFile?.size ?? 0;
-    if (sizeBytes > 20 * 1024 * 1024) return toast.error("Audio is over 20MB — trim or compress before AI sync.");
+    if (!audioBuffer) return toast.error("Re-load your audio file from the Upload page first.");
     setAiLoading(true);
-    const tid = toast.loading("AI is aligning words…");
+    const tid = toast.loading("Analyzing audio…");
     try {
-      const buf = rawArrayBuffer ?? (await audioFile!.arrayBuffer());
-      const bytes = new Uint8Array(buf);
-      let bin = "";
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
-      const audioBase64 = btoa(bin);
-      const audioMime = audioFile?.type || "audio/mpeg";
-
+      const onsets = await detectOnsets(audioBuffer, (pct, label) =>
+        toast.loading(`${label ?? "Analyzing"} ${Math.round(pct)}%`, { id: tid }),
+      );
       const indexed = lines
         .map((l, i) => ({ line: l, index: i }))
         .filter((x) => x.line.startTime != null);
@@ -83,18 +76,18 @@ function WordTimingsPage() {
         startSeconds: x.line.startTime!,
         endSeconds: endByIndex.get(x.index) ?? x.line.startTime! + 8,
       }));
-      const { lines: res } = await aiSyncWords({ data: { audioBase64, audioMime, lines: payloadLines } });
+      const res = alignWords(onsets, payloadLines);
       let applied = 0;
       for (const r of res) {
         const target = lines[r.lineIndex];
-        if (target && Array.isArray(r.wordOffsetsMs) && r.wordOffsetsMs.length) {
+        if (target && r.wordOffsetsMs.length) {
           setWordOffsets(target.id, r.wordOffsetsMs);
           applied++;
         }
       }
-      toast.success(`AI aligned words for ${applied} lines.`, { id: tid });
+      toast.success(`Aligned words for ${applied} lines.`, { id: tid });
     } catch (e: any) {
-      toast.error(e?.message ?? "AI word sync failed", { id: tid });
+      toast.error(e?.message ?? "Word sync failed", { id: tid });
     } finally {
       setAiLoading(false);
     }
