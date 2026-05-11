@@ -31,13 +31,15 @@ function GeneratePage() {
 
     try {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const { fetchFile } = await import("@ffmpeg/util");
-      // Bundle ffmpeg core from our own origin — avoids unpkg + COOP/COEP issues.
-      const coreURL = (await import("@ffmpeg/core?url")).default;
-      const wasmURL = (await import("@ffmpeg/core/wasm?url")).default;
+      const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
-      await ffmpeg.load({ coreURL, wasmURL });
+      // Single-threaded core — no SharedArrayBuffer / COOP-COEP required.
+      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      });
 
       setStatus("rendering");
       const fps = 30;
