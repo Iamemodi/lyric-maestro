@@ -31,14 +31,13 @@ function GeneratePage() {
 
     try {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
+      const { fetchFile } = await import("@ffmpeg/util");
+      // Bundle ffmpeg core from our own origin — avoids unpkg + COOP/COEP issues.
+      const coreURL = (await import("@ffmpeg/core/dist/umd/ffmpeg-core.js?url")).default;
+      const wasmURL = (await import("@ffmpeg/core/dist/umd/ffmpeg-core.wasm?url")).default;
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
-      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-      });
+      await ffmpeg.load({ coreURL, wasmURL });
 
       setStatus("rendering");
       const fps = 30;
