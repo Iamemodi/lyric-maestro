@@ -33,8 +33,8 @@ function GeneratePage() {
       const { FFmpeg } = await import("@ffmpeg/ffmpeg");
       const { fetchFile } = await import("@ffmpeg/util");
       // Bundle ffmpeg core from our own origin — avoids unpkg + COOP/COEP issues.
-      const coreURL = (await import("@ffmpeg/core/dist/umd/ffmpeg-core.js?url")).default;
-      const wasmURL = (await import("@ffmpeg/core/dist/umd/ffmpeg-core.wasm?url")).default;
+      const coreURL = (await import("@ffmpeg/core?url")).default;
+      const wasmURL = (await import("@ffmpeg/core/wasm?url")).default;
       const ffmpeg = new FFmpeg();
       ffmpegRef.current = ffmpeg;
       await ffmpeg.load({ coreURL, wasmURL });
