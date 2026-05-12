@@ -13,8 +13,9 @@ export interface RenderInput {
 }
 
 export function getCanvasSize(aspect: "16:9" | "4:3", base = 720) {
-  if (aspect === "16:9") return { w: 1280, h: 720 };
-  return { w: 960, h: 720 };
+  const h = base;
+  const w = aspect === "16:9" ? Math.round((base * 16) / 9) : Math.round((base * 4) / 3);
+  return { w, h };
 }
 
 function voiceColor(voices: Voice[], id: string | null, fallback: string) {
