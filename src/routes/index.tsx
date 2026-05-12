@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { audioEngine } from "@/lib/audio-engine";
 import { toast } from "sonner";
 import { validateAudio, validateLyricsFile } from "@/lib/validation";
+import { parseLRC } from "@/lib/lrc";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -54,8 +55,17 @@ function UploadPage() {
     if (!v.ok) return toast.error(v.error);
     try {
       const text = await file.text();
-      setLyricsLocal(text);
-      toast.success(`Loaded ${file.name}`);
+      if (file.name.toLowerCase().endsWith(".lrc")) {
+        const { lines: lrcLines, title: lt, artist: la } = parseLRC(text);
+        if (!lrcLines.length) return toast.error("No timestamps found in .lrc");
+        setLyricsLocal(lrcLines.map((l) => l.text).join("\n"));
+        if (lt && !t) setT(lt);
+        if (la && !a) setA(la);
+        toast.success(`Loaded ${lrcLines.length} lines from .lrc`);
+      } else {
+        setLyricsLocal(text);
+        toast.success(`Loaded ${file.name}`);
+      }
     } catch {
       toast.error("Could not read lyrics file");
     }
