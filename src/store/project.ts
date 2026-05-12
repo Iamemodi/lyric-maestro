@@ -73,6 +73,7 @@ export interface ProjectState {
   updateVoice: (id: string, patch: Partial<Voice>) => void;
   setGenerated: (blobUrl: string | null, hd: boolean) => void;
   setCoverImage: (dataUrl: string | null) => void;
+  restoreLines: (lines: LyricLine[]) => void;
 }
 
 const defaultVoices: Voice[] = [
@@ -134,13 +135,18 @@ export const useProject = create<ProjectState>()(
       generated: { blobUrl: null, hd: false },
 
       loadFile: async (file) => {
+        // Revoke any previous object URL to avoid leaks across reloads.
+        const prevUrl = get().audioUrl;
+        if (prevUrl) {
+          try { URL.revokeObjectURL(prevUrl); } catch {}
+        }
         set({ loadProgress: { phase: "reading", percent: 5 } });
         const arr = await file.arrayBuffer();
         const url = URL.createObjectURL(file);
-        set({ audioFile: file, audioUrl: url, rawArrayBuffer: arr, loadProgress: { phase: "decoding", percent: 35 } });
+        set({ audioFile: file, audioUrl: url, rawArrayBuffer: null, loadProgress: { phase: "decoding", percent: 35 } });
+        const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+        const ctx = new AC();
         try {
-          const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
-          const ctx = new AC();
           const buf = await ctx.decodeAudioData(arr.slice(0));
           set({ loadProgress: { phase: "peaks", percent: 70 } });
           const target = 3000;
@@ -157,11 +163,13 @@ export const useProject = create<ProjectState>()(
             }
             peaks[i] = max;
           }
+          // rawArrayBuffer intentionally not stored — frees ~file size of memory.
           set({ audioBuffer: buf, peaks, duration: buf.duration, loadProgress: { phase: "done", percent: 100 } });
-          ctx.close();
         } catch (e) {
           console.error("decode failed", e);
           set({ loadProgress: { phase: "error", percent: 0 } });
+        } finally {
+          try { await ctx.close(); } catch {}
         }
       },
 
