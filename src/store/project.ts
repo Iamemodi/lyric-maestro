@@ -235,8 +235,15 @@ export const useProject = create<ProjectState>()(
       updateVoice: (id, patch) =>
         set((s) => ({ voices: s.voices.map((v) => (v.id === id ? { ...v, ...patch } : v)) })),
 
-      setGenerated: (blobUrl, hd) => set({ generated: { blobUrl, hd } }),
+      setGenerated: (blobUrl, hd) => {
+        const prev = get().generated.blobUrl;
+        if (prev && prev !== blobUrl) {
+          try { URL.revokeObjectURL(prev); } catch {}
+        }
+        set({ generated: { blobUrl, hd } });
+      },
       setCoverImage: (dataUrl) => set({ coverImageDataUrl: dataUrl }),
+      restoreLines: (lines) => set({ lines }),
     }),
     {
       name: "mellow-project",
