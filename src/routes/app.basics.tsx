@@ -13,7 +13,19 @@ import { downscaleImageToDataUrl, validateImage, validateLyricsFile } from "@/li
 export const Route = createFileRoute("/app/basics")({ component: BasicsPage });
 
 function BasicsPage() {
-  const { title, artist, setMeta, lines, setLyrics, coverImageDataUrl, setCoverImage } = useProject();
+  const { title, artist, setMeta, lines, setLyrics, coverImageDataUrl, setCoverImage, restoreLines } = useProject();
+
+  const saveLyricsWithUndo = (text: string) => {
+    const snapshot = lines;
+    setLyrics(text);
+    toast.success("Lyrics updated", {
+      action: {
+        label: "Undo",
+        onClick: () => restoreLines(snapshot),
+      },
+      duration: 8000,
+    });
+  };
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(lines.map((l) => l.text).join("\n"));
   const [imgBusy, setImgBusy] = useState(false);
@@ -24,8 +36,8 @@ function BasicsPage() {
     try {
       const text = await file.text();
       setDraft(text);
-      setLyrics(text);
-      toast.success(`Loaded ${file.name} (resets timings)`);
+      saveLyricsWithUndo(text);
+      toast.success(`Loaded ${file.name}`);
     } catch {
       toast.error("Could not read lyrics file");
     }
@@ -126,7 +138,7 @@ function BasicsPage() {
                 <Textarea value={draft} onChange={(e) => setDraft(e.target.value)} className="min-h-[400px] font-mono text-sm" />
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                  <Button onClick={() => { setLyrics(draft); setOpen(false); }}>Save (resets timings)</Button>
+                  <Button onClick={() => { saveLyricsWithUndo(draft); setOpen(false); }}>Save (resets timings)</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>

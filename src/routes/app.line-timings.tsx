@@ -4,18 +4,20 @@ import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { formatTime, Waveform } from "@/components/Waveform";
-import { Play, Sparkles, Loader2 } from "lucide-react";
+import { Play, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { autoSync } from "@/lib/sync-engine";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/app/line-timings")({ component: LineTimingsPage });
 
 function LineTimingsPage() {
-  const { lines, setLineStart, setWordOffsets, voices, audioBuffer } = useProject();
+  const { lines, setLineStart, setWordOffsets, voices, audioBuffer, audioUrl } = useProject();
   const [activeIdx, setActiveIdx] = useState(() => lines.findIndex((l) => l.startTime == null));
   const [aiLoading, setAiLoading] = useState(false);
   const audio = useAudioState();
   const listRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const runAiSync = async () => {
     if (!lines.length) return toast.error("Add lyrics first.");
@@ -55,11 +57,13 @@ function LineTimingsPage() {
   const safeIdx = activeIdx < 0 ? 0 : Math.min(activeIdx, lines.length - 1);
   const currentLine = lines[safeIdx];
 
-  const mark = () => {
+  const markRef = useRef(() => {});
+  markRef.current = () => {
     if (!currentLine) return;
     setLineStart(currentLine.id, audioEngine.currentTime);
     setActiveIdx((i) => Math.min(lines.length - 1, (i < 0 ? 0 : i) + 1));
   };
+  const mark = () => markRef.current();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -67,12 +71,12 @@ function LineTimingsPage() {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.code === "Space") {
         e.preventDefault();
-        mark();
+        markRef.current();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, []);
 
   useEffect(() => {
     const el = listRef.current?.querySelector(`[data-idx="${safeIdx}"]`) as HTMLElement | null;
@@ -103,6 +107,20 @@ function LineTimingsPage() {
           <Button onClick={mark} variant="default">Mark line ({safeIdx + 1}/{lines.length})</Button>
         </div>
       </div>
+
+      {!audioUrl && lines.length > 0 && (
+        <div className="rounded-lg border border-border bg-amber-500/10 text-amber-600 dark:text-amber-400 px-4 py-3 text-sm flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            Audio isn't loaded in this session. <Link to="/" className="underline">Re-upload your audio</Link> to enable playback and AI Auto-Sync.
+          </div>
+        </div>
+      )}
+      {isMobile && (
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm">
+          Tap-sync works best with a keyboard. Use the <strong>Mark line</strong> button or import an .lrc file from the Resync page.
+        </div>
+      )}
 
       <div ref={listRef} className="rounded-lg border border-border max-h-[60vh] overflow-y-auto divide-y divide-border">
         {lines.map((l, i) => {

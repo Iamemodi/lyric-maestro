@@ -1,14 +1,26 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useProject } from "@/store/project";
 import { Button } from "@/components/ui/button";
-import { Download, Mic2, Music2, Sparkles, Volume2 } from "lucide-react";
-import { toast } from "sonner";
+import { Download, Sparkles } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toLRC } from "@/lib/lrc";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/video")({ component: VideoPage });
 
 function VideoPage() {
-  const { generated, title } = useProject();
+  const { generated, title, artist, lines } = useProject();
+
+  const exportLrc = () => {
+    if (!lines.some((l) => l.startTime != null)) return toast.error("No timed lines to export.");
+    const text = toLRC(lines, title, artist);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `${title || "karaoke"}.lrc`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   if (!generated.blobUrl) {
     return (
@@ -47,17 +59,9 @@ function VideoPage() {
           </AlertDialog>
         )}
 
-        <div className="flex gap-1 ml-auto">
-          {[
-            { icon: Music2, label: "Instrument separation" },
-            { icon: Mic2, label: "Crowd mode" },
-            { icon: Volume2, label: "Vocal-up" },
-          ].map(({ icon: Icon, label }) => (
-            <Button key={label} variant="ghost" size="icon" onClick={() => toast(`${label} — coming soon`)} title={label}>
-              <Icon className="h-4 w-4" />
-            </Button>
-          ))}
-        </div>
+        <Button variant="outline" onClick={exportLrc} className="ml-auto">
+          <Download className="h-4 w-4 mr-2" /> Export .lrc
+        </Button>
       </div>
 
       <div className="flex justify-end pt-6 border-t border-border mt-8">
