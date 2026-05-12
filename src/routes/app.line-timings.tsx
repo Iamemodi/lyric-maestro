@@ -4,9 +4,10 @@ import { audioEngine, useAudioState } from "@/lib/audio-engine";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { formatTime, Waveform } from "@/components/Waveform";
-import { Play, Sparkles, Loader2 } from "lucide-react";
+import { Play, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { autoSync } from "@/lib/sync-engine";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const Route = createFileRoute("/app/line-timings")({ component: LineTimingsPage });
 
