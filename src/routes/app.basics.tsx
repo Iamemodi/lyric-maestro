@@ -138,7 +138,7 @@ function BasicsPage() {
                 <Textarea value={draft} onChange={(e) => setDraft(e.target.value)} className="min-h-[400px] font-mono text-sm" />
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                  <Button onClick={() => { setLyrics(draft); setOpen(false); }}>Save (resets timings)</Button>
+                  <Button onClick={() => { saveLyricsWithUndo(draft); setOpen(false); }}>Save (resets timings)</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
