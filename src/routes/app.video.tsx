@@ -59,17 +59,9 @@ function VideoPage() {
           </AlertDialog>
         )}
 
-        <div className="flex gap-1 ml-auto">
-          {[
-            { icon: Music2, label: "Instrument separation" },
-            { icon: Mic2, label: "Crowd mode" },
-            { icon: Volume2, label: "Vocal-up" },
-          ].map(({ icon: Icon, label }) => (
-            <Button key={label} variant="ghost" size="icon" onClick={() => toast(`${label} — coming soon`)} title={label}>
-              <Icon className="h-4 w-4" />
-            </Button>
-          ))}
-        </div>
+        <Button variant="outline" onClick={exportLrc} className="ml-auto">
+          <Download className="h-4 w-4 mr-2" /> Export .lrc
+        </Button>
       </div>
 
       <div className="flex justify-end pt-6 border-t border-border mt-8">
