@@ -11,7 +11,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/app/line-timings")({ component: LineTimingsPage });
 
 function LineTimingsPage() {
-  const { lines, setLineStart, setWordOffsets, voices, audioBuffer } = useProject();
+  const { lines, setLineStart, setWordOffsets, voices, audioBuffer, audioUrl } = useProject();
   const [activeIdx, setActiveIdx] = useState(() => lines.findIndex((l) => l.startTime == null));
   const [aiLoading, setAiLoading] = useState(false);
   const audio = useAudioState();
@@ -55,11 +55,13 @@ function LineTimingsPage() {
   const safeIdx = activeIdx < 0 ? 0 : Math.min(activeIdx, lines.length - 1);
   const currentLine = lines[safeIdx];
 
-  const mark = () => {
+  const markRef = useRef(() => {});
+  markRef.current = () => {
     if (!currentLine) return;
     setLineStart(currentLine.id, audioEngine.currentTime);
     setActiveIdx((i) => Math.min(lines.length - 1, (i < 0 ? 0 : i) + 1));
   };
+  const mark = () => markRef.current();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -67,12 +69,12 @@ function LineTimingsPage() {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.code === "Space") {
         e.preventDefault();
-        mark();
+        markRef.current();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, []);
 
   useEffect(() => {
     const el = listRef.current?.querySelector(`[data-idx="${safeIdx}"]`) as HTMLElement | null;
