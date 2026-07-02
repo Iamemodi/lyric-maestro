@@ -6,8 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { drawFrame, getCanvasSize } from "@/lib/karaoke-renderer";
 import { useCoverImage } from "@/lib/use-cover-image";
 import { toast } from "sonner";
-import coreURL from "@ffmpeg/core/dist/umd/ffmpeg-core.js?url";
-import wasmURL from "@ffmpeg/core/dist/umd/ffmpeg-core.wasm?url";
+// Load ffmpeg core from CDN — @ffmpeg/core's package.json exports field blocks
+// deep imports, and the UMD core script isn't a real ESM module we can bundle.
+const CORE_VERSION = "0.12.6";
+const coreURL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.js`;
+const wasmURL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.wasm`;
 
 export const Route = createFileRoute("/app/generate")({ component: GeneratePage });
 
