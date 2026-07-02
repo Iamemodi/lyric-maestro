@@ -6,11 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { drawFrame, getCanvasSize } from "@/lib/karaoke-renderer";
 import { useCoverImage } from "@/lib/use-cover-image";
 import { toast } from "sonner";
-// Load ffmpeg core from CDN — @ffmpeg/core's package.json exports field blocks
-// deep imports, and the UMD core script isn't a real ESM module we can bundle.
-const CORE_VERSION = "0.12.6";
-const coreURL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.js`;
-const wasmURL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.wasm`;
+// Self-host ffmpeg core so COOP/COEP doesn't block cross-origin loads.
+// JS lives in /public; wasm is CDN-hosted (too big for repo) but served
+// from our own origin under /__l5e/ so it's same-origin to the browser.
+const coreURL = "/ffmpeg/ffmpeg-core.js";
+const wasmURL = "/__l5e/assets-v1/3becb257-bb5d-4d0c-896b-f87e2fc1a682/ffmpeg-core.wasm";
 
 export const Route = createFileRoute("/app/generate")({ component: GeneratePage });
 
