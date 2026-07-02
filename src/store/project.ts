@@ -55,7 +55,7 @@ export interface ProjectState {
   coverImageDataUrl: string | null;
   loadProgress: LoadProgress;
 
-  generated: { blobUrl: string | null; hd: boolean };
+  generated: { blobUrl: string | null; hd: boolean; tier?: string };
 
   loadFile: (file: File) => Promise<void>;
   setLyrics: (raw: string) => void;
@@ -71,7 +71,7 @@ export interface ProjectState {
   addVoice: () => void;
   removeVoice: (id: string) => void;
   updateVoice: (id: string, patch: Partial<Voice>) => void;
-  setGenerated: (blobUrl: string | null, hd: boolean) => void;
+  setGenerated: (blobUrl: string | null, hd: boolean, tier?: string) => void;
   setCoverImage: (dataUrl: string | null) => void;
   restoreLines: (lines: LyricLine[]) => void;
 }
@@ -235,12 +235,12 @@ export const useProject = create<ProjectState>()(
       updateVoice: (id, patch) =>
         set((s) => ({ voices: s.voices.map((v) => (v.id === id ? { ...v, ...patch } : v)) })),
 
-      setGenerated: (blobUrl, hd) => {
+      setGenerated: (blobUrl, hd, tier) => {
         const prev = get().generated.blobUrl;
         if (prev && prev !== blobUrl) {
           try { URL.revokeObjectURL(prev); } catch {}
         }
-        set({ generated: { blobUrl, hd } });
+        set({ generated: { blobUrl, hd, tier } });
       },
       setCoverImage: (dataUrl) => set({ coverImageDataUrl: dataUrl }),
       restoreLines: (lines) => set({ lines }),
