@@ -9,9 +9,8 @@ import { toast } from "sonner";
 // Self-host ffmpeg core so COOP/COEP doesn't block cross-origin loads.
 // JS lives in /public; wasm is CDN-hosted (too big for repo) but served
 // from our own origin under /__l5e/ so it's same-origin to the browser.
-import wasmAsset from "../../public/ffmpeg/ffmpeg-core.wasm.asset.json";
 const coreURL = "/ffmpeg/ffmpeg-core.js";
-const wasmURL = wasmAsset.url;
+const wasmURL = "/__l5e/assets-v1/3becb257-bb5d-4d0c-896b-f87e2fc1a682/ffmpeg-core.wasm";
 
 export const Route = createFileRoute("/app/generate")({ component: GeneratePage });
 
