@@ -37,6 +37,9 @@ function VideoPage() {
       <h1 className="text-2xl font-bold">Your karaoke video</h1>
       <video controls src={generated.blobUrl} className="w-full rounded-xl border border-border bg-black" />
 
+      {generated.tier && (
+        <p className="text-xs text-muted-foreground">Rendered at {generated.tier}</p>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <a href={generated.blobUrl} download={`${title || "karaoke"}.mp4`}>
           <Button><Download className="h-4 w-4 mr-2" />Download {generated.hd ? "HD" : "SD"}</Button>
